@@ -2,12 +2,14 @@ import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { SocksProxyAgent } from "socks-proxy-agent";
 import FormData from "form-data";
 import fs from "fs";
+import path from "path";
 import {
   RestRequestPayload,
   RestResponse,
   AuthConfig,
   ProxyConfig,
 } from "./types.js";
+import { expandGlob, validateFile } from "./file-utils.js";
 
 export class RestClient {
   private client: AxiosInstance;
@@ -77,23 +79,37 @@ export class RestClient {
   private async prepareBody(
     payload: RestRequestPayload
   ): Promise<string | FormData | undefined> {
-    if (payload.files && Object.keys(payload.files).length > 0) {
-      const form = new FormData();
+    const form = new FormData();
+    let hasFiles = false;
 
+    // Handle filePattern (glob)
+    if (payload.filePattern) {
+      const matchedFiles = expandGlob(payload.filePattern);
+      for (const filePath of matchedFiles) {
+        validateFile(filePath);
+        const fileName = path.basename(filePath);
+        form.append(fileName, fs.createReadStream(filePath));
+        hasFiles = true;
+      }
+    }
+
+    // Handle explicit files
+    if (payload.files && Object.keys(payload.files).length > 0) {
       for (const [fieldName, fileUpload] of Object.entries(payload.files)) {
         const filePath = fileUpload.path;
-        if (!fs.existsSync(filePath)) {
-          throw new Error(`File not found: ${filePath}`);
-        }
+        validateFile(filePath);
         form.append(fieldName, fs.createReadStream(filePath));
+        hasFiles = true;
       }
+    }
 
+    // If we have files, add form fields and return FormData
+    if (hasFiles) {
       if (payload.formData) {
         for (const [key, value] of Object.entries(payload.formData)) {
           form.append(key, value);
         }
       }
-
       return form;
     }
 

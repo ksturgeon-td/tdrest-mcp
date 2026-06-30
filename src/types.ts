@@ -26,6 +26,7 @@ export interface RestRequestPayload {
   headers?: Record<string, string>;
   body?: string | Record<string, unknown>;
   files?: Record<string, FileUpload>;
+  filePattern?: string; // Glob pattern for files
   formData?: Record<string, string | number | boolean>;
   auth?: AuthConfig;
   proxy?: ProxyConfig;

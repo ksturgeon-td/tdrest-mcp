@@ -7,6 +7,13 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { RestClient } from "./rest-client.js";
 import { SyntaxHelpRegistry } from "./syntax-help.js";
 import { AuthConfig, ProxyConfig, RestRequestPayload } from "./types.js";
+import {
+  expandGlob,
+  listDirectory,
+  validateFile,
+  formatFileSize,
+  filterByExtension,
+} from "./file-utils.js";
 
 const server = new Server({
   name: "tdrest-mcp",
@@ -461,6 +468,48 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
       {
+        name: "list_files",
+        description:
+          "List files in a directory with optional filtering by extension",
+        inputSchema: {
+          type: "object",
+          properties: {
+            directory: {
+              type: "string",
+              description:
+                "Directory path (e.g., /tmp, ~/Documents). Use ~ for home directory.",
+            },
+            extension: {
+              type: "string",
+              description:
+                'Optional file extension filter (e.g., ".pdf", ".csv"). Comma-separated for multiple.',
+            },
+            recursive: {
+              type: "boolean",
+              description:
+                "Whether to include subdirectories in listing (default: false)",
+            },
+          },
+          required: ["directory"],
+        },
+      },
+      {
+        name: "find_files",
+        description:
+          "Find files matching a glob pattern (e.g., /tmp/*.pdf, ~/Documents/**/*.csv)",
+        inputSchema: {
+          type: "object",
+          properties: {
+            pattern: {
+              type: "string",
+              description:
+                "Glob pattern to search for files (e.g., /tmp/*.pdf, ~/data/**/*.csv)",
+            },
+          },
+          required: ["pattern"],
+        },
+      },
+      {
         name: "execute_rest_call",
         description:
           "Execute a REST API call with support for custom auth, Socks5 proxy, and multipart uploads",
@@ -499,6 +548,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 },
                 required: ["path"],
               },
+            },
+            filePattern: {
+              type: "string",
+              description:
+                "Glob pattern to match files (e.g., /tmp/*.pdf, ~/docs/**/*.csv). Alternative to explicit files.",
             },
             formData: {
               type: "object",
@@ -664,7 +718,53 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const toolInput = request.params.arguments as Record<string, unknown>;
 
   try {
-    if (toolName === "execute_rest_call") {
+    if (toolName === "list_files") {
+      const directory = toolInput.directory as string;
+      const extension = toolInput.extension as string | undefined;
+      const recursive = (toolInput.recursive as boolean | undefined) || false;
+
+      const listing = listDirectory(directory, recursive);
+
+      let text = `Directory: ${listing.directory}\n`;
+      text += `Total items: ${listing.total}\n\n`;
+
+      if (listing.files.length > 0) {
+        text += "FILES:\n";
+        for (const file of listing.files) {
+          text += `  ${file.name} (${formatFileSize(file.size)}) - Modified: ${file.modifiedAt}\n`;
+        }
+      }
+
+      if (listing.subdirectories.length > 0) {
+        text += "\nSUBDIRECTORIES:\n";
+        for (const dir of listing.subdirectories) {
+          text += `  ${dir.name}/\n`;
+        }
+      }
+
+      if (listing.files.length === 0 && listing.subdirectories.length === 0) {
+        text += "(empty directory)\n";
+      }
+
+      return {
+        content: [{ type: "text", text }],
+      };
+    } else if (toolName === "find_files") {
+      const pattern = toolInput.pattern as string;
+
+      const matchedFiles = expandGlob(pattern);
+
+      let text = `Found ${matchedFiles.length} file(s) matching pattern: ${pattern}\n\n`;
+
+      for (const filePath of matchedFiles) {
+        const file = validateFile(filePath);
+        text += `${file.path} (${formatFileSize(file.size)})\n`;
+      }
+
+      return {
+        content: [{ type: "text", text }],
+      };
+    } else if (toolName === "execute_rest_call") {
       const payload = toolInput as unknown as RestRequestPayload;
 
       // Use session auth if not specified in request
