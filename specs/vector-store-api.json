@@ -1,0 +1,402 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Data Insights Service API",
+    "description": "REST APIs to enable a database user to get questions answered from their database in a conversational manner.",
+    "version": "2.2.17"
+  },
+  "servers": [
+    {
+      "url": "/one-td"
+    }
+  ],
+  "paths": {
+    "/data-insights/api/v2/health": {
+      "get": {
+        "tags": ["Service Support"],
+        "summary": "Check the health of the service",
+        "description": "Sanity check.",
+        "operationId": "health_data_insights_api_v2_health_get",
+        "responses": {
+          "200": {
+            "description": "Healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {"type": "string"},
+                    "platform": {"type": "string"},
+                    "version": {"type": "string"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/data-insights/api/v2/collections": {
+      "get": {
+        "tags": ["Collection Management"],
+        "summary": "Get a list of collections",
+        "operationId": "list_collections_data_insights_api_v2_collections_get",
+        "security": [
+          {"HTTPBasic": []},
+          {"HTTPBearer": []}
+        ],
+        "parameters": [
+          {
+            "name": "authorized",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "boolean"},
+            "description": "Only authorized collections"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1, "default": 1},
+            "description": "Page number"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "schema": {"type": "integer", "minimum": 1},
+            "description": "Number of items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Collection List Retrieved"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Collection Management"],
+        "summary": "Create a new collection",
+        "operationId": "create_collection_data_insights_api_v2_collections__collection_name__post",
+        "security": [
+          {"HTTPBasic": []},
+          {"HTTPBearer": []}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"type": "object"}
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Collection Create Started"
+          }
+        }
+      }
+    },
+    "/data-insights/api/v2/collections/{collection_name}": {
+      "get": {
+        "tags": ["Collection Management"],
+        "summary": "Get collection information by name",
+        "operationId": "get_collection_info",
+        "security": [
+          {"HTTPBasic": []},
+          {"HTTPBearer": []}
+        ],
+        "parameters": [
+          {
+            "name": "collection_name",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Name of the collection"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Collection Information Retrieved"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Collection Management"],
+        "summary": "Update an existing collection",
+        "operationId": "update_collection",
+        "security": [
+          {"HTTPBasic": []},
+          {"HTTPBearer": []}
+        ],
+        "parameters": [
+          {
+            "name": "collection_name",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Name of the collection"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"type": "object"}
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Collection Update Started"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Collection Management"],
+        "summary": "Destroy a collection",
+        "operationId": "destroy_collection",
+        "security": [
+          {"HTTPBasic": []},
+          {"HTTPBearer": []}
+        ],
+        "parameters": [
+          {
+            "name": "collection_name",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Name of the collection"
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Collection Destroy Started"
+          }
+        }
+      }
+    },
+    "/data-insights/api/v2/collections/{collection_name}/similarity-search": {
+      "post": {
+        "tags": ["Collection Asks"],
+        "summary": "Perform similarity search in the collection",
+        "operationId": "similarity_search_interactive",
+        "security": [
+          {"HTTPBasic": []},
+          {"HTTPBearer": []}
+        ],
+        "parameters": [
+          {
+            "name": "collection_name",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Name of the collection"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"type": "object"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Similarity Search Results Retrieved"
+          }
+        }
+      }
+    },
+    "/data-insights/api/v2/collections/{collection_name}/prepare-response": {
+      "post": {
+        "tags": ["Collection Asks"],
+        "summary": "Prepare a natural language response",
+        "operationId": "prepare_response_interactive",
+        "security": [
+          {"HTTPBasic": []},
+          {"HTTPBearer": []}
+        ],
+        "parameters": [
+          {
+            "name": "collection_name",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Name of the collection"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"type": "object"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Prepare Response Result Retrieved"
+          }
+        }
+      }
+    },
+    "/data-insights/api/v2/collections/{collection_name}/ask": {
+      "post": {
+        "tags": ["Collection Asks"],
+        "summary": "Perform similarity search and prepare a response",
+        "operationId": "ask_interactive",
+        "security": [
+          {"HTTPBasic": []},
+          {"HTTPBearer": []}
+        ],
+        "parameters": [
+          {
+            "name": "collection_name",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Name of the collection"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"type": "object"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ask Result Retrieved"
+          }
+        }
+      }
+    },
+    "/data-insights/api/v2/collections/{collection_name}/ingest": {
+      "put": {
+        "tags": ["Collection Management"],
+        "summary": "Upload documents to a collection",
+        "operationId": "ingest",
+        "security": [
+          {"HTTPBasic": []},
+          {"HTTPBearer": []}
+        ],
+        "parameters": [
+          {
+            "name": "collection_name",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Name of the collection"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {"type": "object"}
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Ingest Started"
+          }
+        }
+      }
+    },
+    "/data-insights/api/v2/permissions/{collection_name}": {
+      "get": {
+        "tags": ["Collection Permissions"],
+        "summary": "Get list of users and their permissions for a collection",
+        "operationId": "get_collection_permissions",
+        "security": [
+          {"HTTPBasic": []},
+          {"HTTPBearer": []}
+        ],
+        "parameters": [
+          {
+            "name": "collection_name",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Name of the collection"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Collection Permission List Retrieved"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Collection Permissions"],
+        "summary": "Grant or revoke permissions for a user",
+        "operationId": "modify_collection_permissions",
+        "security": [
+          {"HTTPBasic": []},
+          {"HTTPBearer": []}
+        ],
+        "parameters": [
+          {
+            "name": "collection_name",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Name of the collection"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"type": "object"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Permission Modified"
+          }
+        }
+      }
+    },
+    "/data-insights/api/v2/list_available_models": {
+      "get": {
+        "tags": ["Service Support"],
+        "summary": "List available AI models",
+        "operationId": "get_available_models",
+        "security": [
+          {"HTTPBasic": []},
+          {"HTTPBearer": []}
+        ],
+        "parameters": [
+          {
+            "name": "verify",
+            "in": "query",
+            "schema": {"type": "boolean", "default": false},
+            "description": "Verify that models are accessible"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "HTTPBasic": {
+        "type": "http",
+        "scheme": "basic"
+      },
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

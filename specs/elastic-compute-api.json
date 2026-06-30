@@ -1,0 +1,266 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Global Compute API",
+    "version": "1.0.0",
+    "description": "API for managing compute engine clusters\n\n## Metadata\nThe metadata table below shows dynamic values that are updated at runtime based on build variables and deployment environment.\n\n| Key | Value |\n|-----|-------|\n| Version | v1.3.6 |\n| Environment | preprod |\n| AWS Region | us-west-2 |"
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Use a Bearer token for authentication"
+      }
+    }
+  },
+  "paths": {
+    "/clusters": {
+      "get": {
+        "summary": "List all clusters",
+        "description": "Get a list of all clusters for the specified site",
+        "operationId": "get_clusters",
+        "tags": ["clusters"],
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "query",
+            "required": true,
+            "description": "Site ID",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "description": "Page size",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of clusters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": { "type": "array" },
+                    "total": { "type": "integer" },
+                    "limit": { "type": "integer" },
+                    "offset": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "BearerAuth": [] }]
+      },
+      "post": {
+        "summary": "Create a new cluster",
+        "description": "Create a new cluster with the provided configuration.",
+        "operationId": "post_clusters",
+        "tags": ["clusters"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "config_id": {
+                    "type": "string",
+                    "examples": ["CEAMGPSCTEAM0006U"]
+                  }
+                },
+                "required": ["config_id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": { "description": "Cluster created successfully" }
+        },
+        "security": [{ "BearerAuth": [] }]
+      }
+    },
+    "/clusters/{id}": {
+      "get": {
+        "summary": "Get cluster details",
+        "description": "Get detailed information about a specific cluster by config ID",
+        "operationId": "get_clusters_by_id",
+        "tags": ["clusters"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Config ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Cluster details" }
+        },
+        "security": [{ "BearerAuth": [] }]
+      },
+      "delete": {
+        "summary": "Delete a cluster",
+        "description": "Delete a specific cluster by config ID",
+        "operationId": "delete_clusters_by_id",
+        "tags": ["clusters"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Config ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "202": { "description": "Cluster deletion accepted" }
+        },
+        "security": [{ "BearerAuth": [] }]
+      }
+    },
+    "/configs": {
+      "get": {
+        "summary": "List all compute engine configurations",
+        "description": "List all compute engine configurations",
+        "operationId": "get_configs",
+        "tags": ["metadata"],
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "query",
+            "description": "Site ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "List of configurations" }
+        },
+        "security": [{ "BearerAuth": [] }]
+      },
+      "post": {
+        "summary": "Create a new compute engine configuration",
+        "description": "Create a new compute engine configuration.",
+        "operationId": "post_configs",
+        "tags": ["metadata"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "site_id": { "type": "string" },
+                  "compute": { "type": "object" }
+                },
+                "required": ["name", "site_id", "compute"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Configuration created successfully" }
+        },
+        "security": [{ "BearerAuth": [] }]
+      }
+    },
+    "/configs/{id}": {
+      "get": {
+        "summary": "Get a compute engine configuration by ID",
+        "description": "Get detailed information about a specific compute engine configuration",
+        "operationId": "get_configs_by_id",
+        "tags": ["metadata"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Configuration ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Successful response" }
+        },
+        "security": [{ "BearerAuth": [] }]
+      },
+      "patch": {
+        "summary": "Update a compute engine configuration by ID",
+        "description": "Update an existing compute engine configuration. All fields are optional and only provided fields will be updated.",
+        "operationId": "patch_configs_by_id",
+        "tags": ["metadata"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Configuration ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "description": { "type": "string" },
+                  "compute": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Configuration updated successfully" }
+        },
+        "security": [{ "BearerAuth": [] }]
+      },
+      "delete": {
+        "summary": "Delete a compute engine configuration by ID",
+        "description": "Delete a specific compute engine configuration",
+        "operationId": "delete_configs_by_id",
+        "tags": ["metadata"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Configuration ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Config deleted successfully" }
+        },
+        "security": [{ "BearerAuth": [] }]
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "description": "Get the health status of the service",
+        "operationId": "getHealthStatus",
+        "tags": ["health"],
+        "responses": {
+          "200": { "description": "Service health status" }
+        }
+      }
+    }
+  }
+}
