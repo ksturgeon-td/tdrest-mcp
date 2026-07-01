@@ -15,10 +15,17 @@ import {
   filterByExtension,
 } from "./file-utils.js";
 
-const server = new Server({
-  name: "tdrest-mcp",
-  version: "0.1.0",
-});
+const server = new Server(
+  {
+    name: "tdrest-mcp",
+    version: "0.1.0",
+  },
+  {
+    capabilities: {
+      tools: {},
+    },
+  }
+);
 
 const restClient = new RestClient();
 const syntaxHelp = new SyntaxHelpRegistry();

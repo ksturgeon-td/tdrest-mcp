@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(cat > *)",
-      "Bash(git commit -m 'Add glob patterns and directory listing file utilities *)"
+      "Bash(git commit -m 'Add glob patterns and directory listing file utilities *)",
+      "Bash(git commit -m 'Add comprehensive file discovery documentation *)",
+      "Bash(git push *)",
+      "Bash(timeout 3 node /Users/kevin.sturgeon/claude_code/tdrest-mcp/dist/index.js)",
+      "Bash(git commit -m 'Fix MCP server initialization - declare tools capability *)"
     ],
     "additionalDirectories": [
       "/tmp"
