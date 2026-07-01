@@ -20,7 +20,9 @@
       "Bash(git commit -m 'Add get_service_config tool to expose configured base URLs *)",
       "Bash(git ls-tree *)",
       "Bash(node /tmp/verify-config.mjs)",
-      "Bash(git commit -m 'Support dynamic custom service base URLs *)"
+      "Bash(git commit -m 'Support dynamic custom service base URLs *)",
+      "Bash(node /tmp/test-load.mjs)",
+      "Bash(git commit -m 'Fix .env loading to work from project directory *)"
     ],
     "additionalDirectories": [
       "/tmp",

@@ -1,7 +1,13 @@
 import { config } from "dotenv";
-import { ProxyConfig } from "./types.js";
+import { fileURLToPath } from "url";
+import path from "path";
+import { type ProxyConfig } from "./types.js";
 
-config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const projectRoot = path.resolve(__dirname, "..");
+
+config({ path: path.resolve(projectRoot, ".env") });
 
 export interface ServiceConfig {
   elasticComputeBaseUrl: string;
