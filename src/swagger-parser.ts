@@ -19,7 +19,12 @@ interface SwaggerOperation {
   requestBody?: {
     description?: string;
     required?: boolean;
-    content?: Record<string, unknown>;
+    content?: {
+      "application/json"?: {
+        schema?: Record<string, unknown>;
+      };
+      [key: string]: unknown;
+    };
   };
   responses?: Record<string, { description?: string }>;
   tags?: string[];
@@ -55,7 +60,7 @@ export function parseSwaggerSpec(filePath: string): SyntaxHelpEntry[] {
       const op = operation as SwaggerOperation;
       if (!op.operationId && !op.summary) continue;
 
-      // Extract parameters
+      // Extract parameters (path and query)
       const parameters = (op.parameters || [])
         .filter((p) => p.in === "query" || p.in === "path")
         .map((p) => ({
@@ -64,6 +69,22 @@ export function parseSwaggerSpec(filePath: string): SyntaxHelpEntry[] {
           required: p.required || false,
           description: p.description || "",
         }));
+
+      // Extract request body schema properties
+      const jsonContent = op.requestBody?.content?.["application/json"];
+      const bodySchema = jsonContent?.schema as Record<string, unknown> | undefined;
+      if (bodySchema && bodySchema.properties) {
+        const props = bodySchema.properties as Record<string, Record<string, unknown>>;
+        const required = (bodySchema.required as string[]) || [];
+        for (const [propName, propSchema] of Object.entries(props)) {
+          parameters.push({
+            name: propName,
+            type: (propSchema.type as string) || "object",
+            required: required.includes(propName),
+            description: (propSchema.description as string) || "",
+          });
+        }
+      }
 
       // Build response example
       const successResponse = op.responses?.["200"] || op.responses?.["201"];
