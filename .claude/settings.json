@@ -16,7 +16,8 @@
       "Bash(timeout 5 node dist/index.js)",
       "Bash(git commit -m ' *)",
       "Bash(git commit -m 'Update README to reflect Swagger auto-parser changes *)",
-      "Bash(git commit -m 'Remove console.log from MCP server stdout *)"
+      "Bash(git commit -m 'Remove console.log from MCP server stdout *)",
+      "Bash(git commit -m 'Add get_service_config tool to expose configured base URLs *)"
     ],
     "additionalDirectories": [
       "/tmp"

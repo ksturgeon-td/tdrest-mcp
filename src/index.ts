@@ -106,9 +106,19 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
+        name: "get_service_config",
+        description:
+          "Get configured service base URLs (Elastic Compute, Vector Store, timeouts, etc.)",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          required: [],
+        },
+      },
+      {
         name: "execute_rest_call",
         description:
-          "Execute a REST API call with support for custom auth, Socks5 proxy, and multipart uploads",
+          "Execute a REST API call with support for custom auth, Socks5 proxy, and multipart uploads. Use get_service_config to see available base URLs.",
         inputSchema: {
           type: "object",
           properties: {
@@ -263,7 +273,27 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const toolInput = request.params.arguments as Record<string, unknown>;
 
   try {
-    if (toolName === "list_files") {
+    if (toolName === "get_service_config") {
+      const config = loadConfig();
+      const text = `Service Configuration:
+
+Elastic Compute API:
+  Base URL: ${config.elasticComputeBaseUrl}
+
+Vector Store API:
+  Base URL: ${config.vectorStoreBaseUrl}
+
+Request Timeout: ${config.requestTimeout}ms
+
+Default Proxy:
+  ${config.defaultProxy ? `${config.defaultProxy.type} - ${config.defaultProxy.host}:${config.defaultProxy.port}` : "None (can be set with set_proxy)"}
+
+Use these base URLs when making REST API calls via execute_rest_call.`;
+
+      return {
+        content: [{ type: "text", text }],
+      };
+    } else if (toolName === "list_files") {
       const directory = toolInput.directory as string;
       const extension = toolInput.extension as string | undefined;
       const recursive = (toolInput.recursive as boolean | undefined) || false;
