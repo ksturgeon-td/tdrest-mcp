@@ -58,13 +58,6 @@ function initializeSyntaxHelp(): void {
   );
   const vsEntries = generateSyntaxHelpFromSwagger(vectorStoreSpecPath);
   vsEntries.forEach((entry) => syntaxHelp.register(entry));
-
-  console.log(
-    `Loaded ${gcEntries.length} endpoints from Global Compute API spec`
-  );
-  console.log(
-    `Loaded ${vsEntries.length} endpoints from Vector Store API spec`
-  );
 }
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {

@@ -105,8 +105,7 @@ export function generateSyntaxHelpFromSwagger(
 ): SyntaxHelpEntry[] {
   try {
     return parseSwaggerSpec(specPath);
-  } catch (error) {
-    console.error(`Failed to parse Swagger spec: ${specPath}`, error);
+  } catch {
     return [];
   }
 }
