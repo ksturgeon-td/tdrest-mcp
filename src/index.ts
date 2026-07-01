@@ -275,15 +275,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     if (toolName === "get_service_config") {
       const config = loadConfig();
-      const text = `Service Configuration:
+      let text = `Service Configuration:
 
 Elastic Compute API:
   Base URL: ${config.elasticComputeBaseUrl}
 
 Vector Store API:
-  Base URL: ${config.vectorStoreBaseUrl}
+  Base URL: ${config.vectorStoreBaseUrl}`;
 
-Request Timeout: ${config.requestTimeout}ms
+      if (Object.keys(config.customServices).length > 0) {
+        text += "\n\nCustom Services:";
+        for (const [name, url] of Object.entries(config.customServices)) {
+          text += `\n  ${name}:\n    Base URL: ${url}`;
+        }
+      }
+
+      text += `\n\nRequest Timeout: ${config.requestTimeout}ms
 
 Default Proxy:
   ${config.defaultProxy ? `${config.defaultProxy.type} - ${config.defaultProxy.host}:${config.defaultProxy.port}` : "None (can be set with set_proxy)"}

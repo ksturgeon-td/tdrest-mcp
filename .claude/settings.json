@@ -17,10 +17,14 @@
       "Bash(git commit -m ' *)",
       "Bash(git commit -m 'Update README to reflect Swagger auto-parser changes *)",
       "Bash(git commit -m 'Remove console.log from MCP server stdout *)",
-      "Bash(git commit -m 'Add get_service_config tool to expose configured base URLs *)"
+      "Bash(git commit -m 'Add get_service_config tool to expose configured base URLs *)",
+      "Bash(git ls-tree *)",
+      "Bash(node /tmp/verify-config.mjs)",
+      "Bash(git commit -m 'Support dynamic custom service base URLs *)"
     ],
     "additionalDirectories": [
-      "/tmp"
+      "/tmp",
+      "/private/tmp"
     ]
   }
 }

@@ -8,6 +8,7 @@ export interface ServiceConfig {
   vectorStoreBaseUrl: string;
   requestTimeout: number;
   defaultProxy: ProxyConfig | null;
+  customServices: Record<string, string>;
 }
 
 function getEnvVar(name: string, defaultValue?: string): string {
@@ -16,6 +17,24 @@ function getEnvVar(name: string, defaultValue?: string): string {
     throw new Error(`Environment variable ${name} is not set`);
   }
   return value || defaultValue!;
+}
+
+function loadCustomServices(): Record<string, string> {
+  const customServices: Record<string, string> = {};
+
+  for (const [key, value] of Object.entries(process.env)) {
+    if (key.endsWith("_BASE_URL")) {
+      const serviceName = key.replace(/_BASE_URL$/, "").toLowerCase();
+      if (
+        serviceName !== "elastic_compute" &&
+        serviceName !== "vector_store"
+      ) {
+        customServices[serviceName] = value as string;
+      }
+    }
+  }
+
+  return customServices;
 }
 
 function loadDefaultProxy(): ProxyConfig | null {
@@ -49,5 +68,6 @@ export function loadConfig(): ServiceConfig {
     ),
     requestTimeout: parseInt(getEnvVar("REQUEST_TIMEOUT", "30000"), 10),
     defaultProxy: loadDefaultProxy(),
+    customServices: loadCustomServices(),
   };
 }
