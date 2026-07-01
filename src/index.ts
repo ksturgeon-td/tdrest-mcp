@@ -6,9 +6,11 @@ import {
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { RestClient } from "./rest-client.js";
 import { SyntaxHelpRegistry } from "./syntax-help.js";
+import { UsageGuideRegistry } from "./usage-guide.js";
 import { AuthConfig, ProxyConfig, RestRequestPayload } from "./types.js";
 import { loadConfig } from "./config.js";
 import { generateSyntaxHelpFromSwagger } from "./swagger-parser.js";
+import { loadGuidesFromDirectory } from "./guide-loader.js";
 import {
   expandGlob,
   listDirectory,
@@ -35,6 +37,11 @@ const server = new Server(
 const restClient = new RestClient();
 const syntaxHelp = new SyntaxHelpRegistry();
 const appConfig = loadConfig();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const guidesDir = path.join(__dirname, "../guides");
+const usageGuides = loadGuidesFromDirectory(guidesDir);
 
 let sessionAuth: AuthConfig | null = null;
 let sessionProxy: ProxyConfig | null = appConfig.defaultProxy;
@@ -251,7 +258,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "get_syntax_help",
         description:
-          "Get help and syntax for available Elastic Compute API endpoints",
+          "Get help and syntax for available API endpoints from Swagger specs",
         inputSchema: {
           type: "object",
           properties: {
@@ -259,6 +266,22 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "string",
               description:
                 'Search query (endpoint name, method, or keyword). Use "list" to see all endpoints.',
+            },
+          },
+          required: ["query"],
+        },
+      },
+      {
+        name: "get_usage_guide",
+        description:
+          "Get usage guides with best practices, workflows, and examples for APIs",
+        inputSchema: {
+          type: "object",
+          properties: {
+            query: {
+              type: "string",
+              description:
+                'Search query or guide name. Use "list" to see all guides, or search by keyword (e.g., "clusters", "error handling").',
             },
           },
           required: ["query"],
@@ -411,6 +434,30 @@ Use these base URLs when making REST API calls via execute_rest_call.`;
 
       return {
         content: [{ type: "text", text: helpText }],
+      };
+    } else if (toolName === "get_usage_guide") {
+      const query = (toolInput.query as string) || "list";
+
+      let guideText: string;
+      if (query.toLowerCase() === "list") {
+        guideText = usageGuides.formatGuidesList();
+      } else {
+        const results = usageGuides.searchGuides(query);
+        if (results.length === 0) {
+          guideText = `No guides found matching "${query}". Use get_usage_guide("list") to see all available guides.`;
+        } else if (results.length === 1) {
+          guideText = usageGuides.formatGuide(results[0]);
+        } else {
+          guideText = `Found ${results.length} guides matching "${query}":\n\n`;
+          for (const guide of results) {
+            guideText += `- **${guide.title}** (\`${guide.name}\`): ${guide.description}\n`;
+          }
+          guideText += `\nUse get_usage_guide("<name>") to view a specific guide.`;
+        }
+      }
+
+      return {
+        content: [{ type: "text", text: guideText }],
       };
     }
 
