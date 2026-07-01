@@ -18,6 +18,7 @@ import {
 } from "./file-utils.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 const server = new Server(
   {
@@ -42,22 +43,21 @@ let sessionProxy: ProxyConfig | null = appConfig.defaultProxy;
 function initializeSyntaxHelp(): void {
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
+  const specsDir = path.join(__dirname, "../specs");
 
-  // Parse Global Compute API spec
-  const globalComputeSpecPath = path.join(
-    __dirname,
-    "../specs/global-compute-api.json"
-  );
-  const gcEntries = generateSyntaxHelpFromSwagger(globalComputeSpecPath);
-  gcEntries.forEach((entry) => syntaxHelp.register(entry));
+  // Auto-discover all .json files in specs/ directory
+  try {
+    const files = fs.readdirSync(specsDir);
+    const specFiles = files.filter((f) => f.endsWith(".json"));
 
-  // Parse Vector Store API spec
-  const vectorStoreSpecPath = path.join(
-    __dirname,
-    "../specs/vector-store-api.json"
-  );
-  const vsEntries = generateSyntaxHelpFromSwagger(vectorStoreSpecPath);
-  vsEntries.forEach((entry) => syntaxHelp.register(entry));
+    for (const specFile of specFiles) {
+      const specPath = path.join(specsDir, specFile);
+      const entries = generateSyntaxHelpFromSwagger(specPath);
+      entries.forEach((entry) => syntaxHelp.register(entry));
+    }
+  } catch (error) {
+    // Specs directory may not exist in some deployments
+  }
 }
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {

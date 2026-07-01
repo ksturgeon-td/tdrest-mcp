@@ -22,7 +22,8 @@
       "Bash(node /tmp/verify-config.mjs)",
       "Bash(git commit -m 'Support dynamic custom service base URLs *)",
       "Bash(node /tmp/test-load.mjs)",
-      "Bash(git commit -m 'Fix .env loading to work from project directory *)"
+      "Bash(git commit -m 'Fix .env loading to work from project directory *)",
+      "Bash(node /tmp/test-specs.mjs)"
     ],
     "additionalDirectories": [
       "/tmp",

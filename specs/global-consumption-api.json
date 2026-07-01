@@ -1,0 +1,775 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Consumption Billing Service API",
+    "description": "API for managing consumption billing and reporting for compute engines.\nThe service provides consumption reports with various aggregation periods\nand contract management.\n",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Teradata",
+      "url": "https://www.teradata.com",
+      "email": "sales@teradata.com"
+    },
+    "license": {
+      "name": "commercial",
+      "url": "https://www.teradata.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "/"
+    },
+    {
+      "url": "/v1"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Consumption",
+      "description": "Operations for generating consumption reports"
+    },
+    {
+      "name": "Contracts",
+      "description": "Operations for retrieving contract information"
+    },
+    {
+      "name": "Health",
+      "description": "Health check operations"
+    }
+  ],
+  "paths": {
+    "/consumption": {
+      "get": {
+        "tags": [
+          "Consumption"
+        ],
+        "summary": "Get consumption report",
+        "description": "Returns consumption data for compute engines with configurable aggregation periods.\nSupports detailed and summary report types with various time periods.\n",
+        "operationId": "getConsumptionReport",
+        "parameters": [
+          {
+            "name": "organization_name",
+            "in": "query",
+            "description": "8-character identifier of the organization (required if ce_siteid not provided)",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            },
+            "example": "MYORG001"
+          },
+          {
+            "name": "ce_siteid",
+            "in": "query",
+            "description": "Compute engine site IDs (can be specified multiple times for multiple sites)",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "style": "form",
+            "explode": true,
+            "example": [
+              "CEAMMYORG00100001",
+              "CEAMMYORG00100002",
+              "CEAMMYORG00100003"
+            ]
+          },
+          {
+            "name": "report_type",
+            "in": "query",
+            "description": "Type of report to generate",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "organization_detailed",
+                "organization_summary"
+              ],
+              "default": "organization_detailed"
+            },
+            "example": "organization_detailed"
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "description": "Start date for the report (YYYY-MM-DD format, defaults to 7 days ago)",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2025-01-01"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "description": "End date for the report (YYYY-MM-DD format, defaults to today)",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2025-01-31"
+          },
+          {
+            "name": "aggregation_period",
+            "in": "query",
+            "description": "Aggregation period for the consumption data",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "hourly",
+                "daily",
+                "weekly",
+                "monthly",
+                "quarterly"
+              ],
+              "default": "daily"
+            },
+            "example": "daily"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Consumption report generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ConsumptionDetailedReport"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConsumptionSummaryReport"
+                    }
+                  ]
+                },
+                "examples": {
+                  "detailed_report": {
+                    "summary": "Detailed consumption report",
+                    "value": {
+                      "organization_name": "MYORG001",
+                      "report_type": "organization_detailed",
+                      "resource_type": "compute_engine",
+                      "start_date": "2025-01-01",
+                      "end_date": "2025-01-07",
+                      "period": "daily",
+                      "time_unit": "day",
+                      "total_consumption": [
+                        {
+                          "date": "2025-01-01",
+                          "time_value": "1",
+                          "units_consumed": "125.50"
+                        },
+                        {
+                          "date": "2025-01-02",
+                          "time_value": "2",
+                          "units_consumed": "180.25"
+                        }
+                      ],
+                      "compute_engine_consumption": [
+                        {
+                          "ce_siteid": "CEAMMYORG00100001",
+                          "resource_type": "compute_engine",
+                          "units_consumed": [
+                            {
+                              "date": "2025-01-01",
+                              "time_value": "1",
+                              "units_consumed": "75.50"
+                            },
+                            {
+                              "date": "2025-01-02",
+                              "time_value": "2",
+                              "units_consumed": "90.25"
+                            }
+                          ],
+                          "last_usage_update": "2025-01-02T15:30:00Z",
+                          "total_units_consumed": "165.75"
+                        }
+                      ],
+                      "last_usage_update": "2025-01-02T15:30:00Z",
+                      "total_units_consumed": "305.75"
+                    }
+                  },
+                  "summary_report": {
+                    "summary": "Summary consumption report",
+                    "value": {
+                      "organization_name": "MYORG001",
+                      "report_type": "organization_summary",
+                      "resource_type": "compute_engine",
+                      "start_date": "2025-01-01",
+                      "end_date": "2025-01-31",
+                      "units_committed": "10000.00",
+                      "units_remaining": "8500.25",
+                      "total_units_consumed": "1499.75",
+                      "last_usage_update": "2025-01-31T23:59:59Z",
+                      "compute_engine_consumption": [
+                        {
+                          "ce_siteid": "CEAMMYORG00100001",
+                          "resource_type": "compute_engine",
+                          "last_usage_update": "2025-01-31T20:45:00Z",
+                          "total_units_consumed": "750.50"
+                        },
+                        {
+                          "ce_siteid": "CEAMMYORG00100002",
+                          "resource_type": "compute_engine",
+                          "last_usage_update": "2025-01-31T18:30:00Z",
+                          "total_units_consumed": "749.25"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/contracts": {
+      "get": {
+        "tags": [
+          "Contracts"
+        ],
+        "summary": "Get contracts for organization",
+        "description": "Returns contract information for the specified organization including\nterm details, quantities, and dates.\n",
+        "operationId": "getContracts",
+        "parameters": [
+          {
+            "name": "organization_name",
+            "in": "query",
+            "required": true,
+            "description": "Organization name to retrieve contracts for",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            },
+            "example": "MYORG001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contracts retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContractsResponse"
+                },
+                "example": {
+                  "contracts": [
+                    {
+                      "organization_name": "MYORG001",
+                      "term_start_date": "2025-01-01T00:00:00Z",
+                      "term_end_date": "2025-12-31T23:59:59Z",
+                      "prorated_unit_quantity": "12000.00",
+                      "created_at": "2024-12-15T10:30:00Z",
+                      "updated_at": "2024-12-15T10:30:00Z"
+                    },
+                    {
+                      "organization_name": "MYORG001",
+                      "term_start_date": "2024-01-01T00:00:00Z",
+                      "term_end_date": "2024-12-31T23:59:59Z",
+                      "prorated_unit_quantity": "10000.00",
+                      "created_at": "2023-12-10T14:20:00Z",
+                      "updated_at": "2024-06-15T09:45:00Z"
+                    }
+                  ],
+                  "total_contracts": 2
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Service health check",
+        "description": "Returns the health status of the consumption billing service",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                },
+                "example": {
+                  "status": "healthy"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ConsumptionDetailedReport": {
+        "type": "object",
+        "description": "Detailed consumption report with time-series data",
+        "properties": {
+          "organization_name": {
+            "type": "string",
+            "description": "Name of the organization",
+            "example": "MYORG001"
+          },
+          "report_type": {
+            "type": "string",
+            "description": "Type of report",
+            "example": "organization_detailed"
+          },
+          "resource_type": {
+            "type": "string",
+            "description": "Type of resource being consumed",
+            "example": "compute_engine"
+          },
+          "ce_siteid": {
+            "type": "string",
+            "description": "Site ID for single-site reports",
+            "example": "CEAMMYORG00100001"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Start date of the report period",
+            "example": "2025-01-01"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "description": "End date of the report period",
+            "example": "2025-01-07"
+          },
+          "period": {
+            "type": "string",
+            "enum": [
+              "hourly",
+              "daily",
+              "weekly",
+              "monthly",
+              "quarterly"
+            ],
+            "description": "Aggregation period",
+            "example": "daily"
+          },
+          "time_unit": {
+            "type": "string",
+            "description": "Unit of time for the period",
+            "example": "day"
+          },
+          "total_consumption": {
+            "type": "array",
+            "description": "Total consumption across all compute engines",
+            "items": {
+              "$ref": "#/components/schemas/Consumption"
+            }
+          },
+          "compute_engine_consumption": {
+            "type": "array",
+            "description": "Per-compute-engine consumption details",
+            "items": {
+              "$ref": "#/components/schemas/CEConsumption"
+            }
+          },
+          "last_usage_update": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of last usage data update",
+            "example": "2025-01-07T23:59:59Z"
+          },
+          "total_units_consumed": {
+            "type": "string",
+            "description": "Total units consumed (decimal as string for precision)",
+            "example": "1250.75"
+          }
+        }
+      },
+      "ConsumptionSummaryReport": {
+        "type": "object",
+        "description": "Summary consumption report without time-series data",
+        "properties": {
+          "organization_name": {
+            "type": "string",
+            "description": "Name of the organization",
+            "example": "MYORG001"
+          },
+          "report_type": {
+            "type": "string",
+            "description": "Type of report",
+            "example": "organization_summary"
+          },
+          "resource_type": {
+            "type": "string",
+            "description": "Type of resource being consumed",
+            "example": "compute_engine"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Start date of the report period",
+            "example": "2025-01-01"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "description": "End date of the report period",
+            "example": "2025-01-31"
+          },
+          "units_committed": {
+            "type": "string",
+            "nullable": true,
+            "description": "Total units committed in contracts (decimal as string)",
+            "example": "10000.00"
+          },
+          "units_remaining": {
+            "type": "string",
+            "nullable": true,
+            "description": "Units remaining from contracts (decimal as string)",
+            "example": "8500.25"
+          },
+          "total_units_consumed": {
+            "type": "string",
+            "description": "Total units consumed (decimal as string for precision)",
+            "example": "1499.75"
+          },
+          "last_usage_update": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of last usage data update",
+            "example": "2025-01-31T23:59:59Z"
+          },
+          "compute_engine_consumption": {
+            "type": "array",
+            "description": "Per-compute-engine consumption summary",
+            "items": {
+              "$ref": "#/components/schemas/CESummaryConsumption"
+            }
+          }
+        }
+      },
+      "Consumption": {
+        "type": "object",
+        "description": "Consumption data for a specific time period",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Date of the consumption period",
+            "example": "2025-01-01"
+          },
+          "time_value": {
+            "type": "string",
+            "description": "Time value within the period",
+            "example": "1"
+          },
+          "units_consumed": {
+            "type": "string",
+            "description": "Units consumed (decimal as string for precision)",
+            "example": "125.50"
+          }
+        }
+      },
+      "CEConsumption": {
+        "type": "object",
+        "description": "Detailed consumption data for a compute engine",
+        "properties": {
+          "ce_siteid": {
+            "type": "string",
+            "description": "Site ID of the compute engine",
+            "example": "CEAMMYORG00100001"
+          },
+          "resource_type": {
+            "type": "string",
+            "description": "Type of resource",
+            "example": "compute_engine"
+          },
+          "units_consumed": {
+            "type": "array",
+            "description": "Time-series consumption data",
+            "items": {
+              "$ref": "#/components/schemas/Consumption"
+            }
+          },
+          "last_usage_update": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of last usage update",
+            "example": "2025-01-07T15:30:00Z"
+          },
+          "total_units_consumed": {
+            "type": "string",
+            "description": "Total units consumed (decimal as string)",
+            "example": "750.25"
+          }
+        }
+      },
+      "CESummaryConsumption": {
+        "type": "object",
+        "description": "Summary consumption data for a compute engine",
+        "properties": {
+          "ce_siteid": {
+            "type": "string",
+            "description": "Site ID of the compute engine",
+            "example": "CEAMMYORG00100001"
+          },
+          "resource_type": {
+            "type": "string",
+            "description": "Type of resource",
+            "example": "compute_engine"
+          },
+          "last_usage_update": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of last usage update",
+            "example": "2025-01-31T20:45:00Z"
+          },
+          "total_units_consumed": {
+            "type": "string",
+            "description": "Total units consumed (decimal as string)",
+            "example": "750.50"
+          }
+        }
+      },
+      "ContractsResponse": {
+        "type": "object",
+        "description": "Response containing contract information",
+        "properties": {
+          "contracts": {
+            "type": "array",
+            "description": "List of contracts",
+            "items": {
+              "$ref": "#/components/schemas/Contract"
+            }
+          },
+          "total_contracts": {
+            "type": "integer",
+            "description": "Total number of contracts returned",
+            "example": 2
+          }
+        },
+        "required": [
+          "contracts",
+          "total_contracts"
+        ]
+      },
+      "Contract": {
+        "type": "object",
+        "description": "Contract information for an organization",
+        "properties": {
+          "organization_name": {
+            "type": "string",
+            "description": "Name of the organization",
+            "example": "MYORG001"
+          },
+          "term_start_date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Start date of the contract term",
+            "example": "2025-01-01T00:00:00Z"
+          },
+          "term_end_date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "End date of the contract term",
+            "example": "2025-12-31T23:59:59Z"
+          },
+          "prorated_unit_quantity": {
+            "type": "string",
+            "description": "Prorated unit quantity (decimal as string)",
+            "example": "12000.00"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Contract creation timestamp",
+            "example": "2024-12-15T10:30:00Z"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Contract last update timestamp",
+            "example": "2024-12-15T10:30:00Z"
+          }
+        },
+        "required": [
+          "organization_name",
+          "term_start_date",
+          "term_end_date",
+          "prorated_unit_quantity",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "HealthResponse": {
+        "type": "object",
+        "description": "Health status response",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Health status of the service",
+            "example": "healthy"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "description": "Error response",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Error title",
+            "example": "Validation Error"
+          },
+          "message": {
+            "type": "string",
+            "description": "Error message",
+            "example": "One or more validation errors occurred."
+          },
+          "resolution": {
+            "type": "string",
+            "description": "Suggested resolution",
+            "example": "Please correct the invalid elements and try again."
+          },
+          "error_code": {
+            "type": "string",
+            "description": "Specific error code",
+            "example": "CONSUMPTION_REPORT_VALIDATION_ERROR"
+          },
+          "severity": {
+            "type": "string",
+            "description": "Error severity",
+            "example": "moderate"
+          },
+          "error_details": {
+            "type": "object",
+            "description": "Detailed field-specific errors",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "example": {
+              "organization_name": "organization_name is required",
+              "start_date": "must be in YYYY-MM-DD format"
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad request - The request was invalid or cannot be otherwise served",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "title": "Validation Error",
+              "message": "One or more validation errors occurred.",
+              "resolution": "Please correct the invalid elements and try again.",
+              "error_code": "CONSUMPTION_REPORT_VALIDATION_ERROR",
+              "severity": "moderate",
+              "error_details": {
+                "start_date": "must be in YYYY-MM-DD format",
+                "period": "must be one of [hourly, daily, weekly, monthly, quarterly]"
+              }
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Unauthorized - Authentication credentials were missing or incorrect",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "title": "Unauthorized",
+              "message": "Authentication credentials were missing or incorrect.",
+              "resolution": "Please provide valid authentication credentials.",
+              "error_code": "UNAUTHORIZED",
+              "severity": "high"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Forbidden - The request is understood, but it has been refused or access is not allowed",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "title": "Forbidden",
+              "message": "Access to this resource is forbidden.",
+              "resolution": "Please check your permissions or contact an administrator.",
+              "error_code": "FORBIDDEN",
+              "severity": "high"
+            }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "Internal server error - An unexpected error occurred",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "title": "Internal Server Error",
+              "message": "An unexpected error occurred while processing the request.",
+              "resolution": "Please try again later or contact support if the problem persists.",
+              "error_code": "INTERNAL_SERVER_ERROR",
+              "severity": "high"
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT bearer token authentication"
+      }
+    }
+  },
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ]
+}
