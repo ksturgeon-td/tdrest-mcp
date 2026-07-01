@@ -19,6 +19,9 @@ Supports custom authentication (Bearer JWT, Basic), Socks5 proxy routing, multip
 - **Progressive Help** — Searchable endpoint documentation with examples and parameters
 - **50+ Endpoints** — Auto-generated from Swagger specs (Elastic Compute, Vector Store, OMS, QueryGrid, etc.)
 - **Swagger Auto-Parser** — Endpoints loaded at startup; no hand-curation needed
+- **Usage Guides** — Best practices, workflows, and examples via searchable markdown guides
+- **Hot-loadable APIs** — Drop a Swagger spec in `specs/` → restart → instant access
+- **Dynamic Service URLs** — Define any service via `*_BASE_URL` environment variables
 - **Stateless Design** — All compute logic lives in the cloud APIs; MCP just brokers requests
 
 ## Quick Start
@@ -110,6 +113,21 @@ Response:
   ...
 ```
 
+### Get Usage Guides
+
+```
+User: "How do I set up a cluster?"
+Claude executes: get_usage_guide {
+  query: "cluster"
+}
+Response:
+  Creating and Managing Clusters guide showing:
+  - Step-by-step workflow
+  - Config vs cluster distinction
+  - Lifecycle management
+  - Common errors and fixes
+```
+
 ### Upload a File
 
 ```
@@ -130,17 +148,25 @@ Claude executes: execute_rest_call {
 
 ```
 src/
-├── index.ts             # MCP server + tool handlers
-├── rest-client.ts       # HTTP client (axios + auth + proxy)
-├── syntax-help.ts       # Endpoint registry and search
-├── swagger-parser.ts    # Swagger spec parser (auto-generates endpoints)
-├── file-utils.ts        # File discovery and glob expansion
-├── types.ts             # TypeScript interfaces
-└── config.ts            # Environment config
+├── index.ts              # MCP server + tool handlers
+├── rest-client.ts        # HTTP client (axios + auth + proxy)
+├── syntax-help.ts        # Endpoint registry and search
+├── usage-guide.ts        # Usage guide registry
+├── guide-loader.ts       # Auto-load guides from guides/ directory
+├── swagger-parser.ts     # Swagger spec parser (auto-generates endpoints)
+├── file-utils.ts         # File discovery and glob expansion
+├── types.ts              # TypeScript interfaces
+└── config.ts             # Environment config
 
 specs/
-├── global-compute-api.json    # Global Compute API (37 endpoints)
-└── vector-store-api.json      # Vector Store API (13 endpoints)
+├── global-compute-api.json        # Global Compute API (37 endpoints)
+├── global-consumption-api.json    # Global Consumption API (3 endpoints)
+└── vector-store-api.json          # Vector Store API (13 endpoints)
+
+guides/
+├── getting-started.md       # Quick introduction and basic workflows
+├── clusters-setup.md        # Step-by-step cluster provisioning
+└── error-handling.md        # Error codes and troubleshooting
 
 tests/
 └── ...                  # Unit tests
@@ -212,9 +238,32 @@ npm start
 The parser extracts:
 - Endpoint path and HTTP method
 - Parameter names, types, and requirements
+- Request body schema properties
 - Operation summary and description
 - Response descriptions and examples
 - Tags for better discoverability
+
+## Adding Usage Guides
+
+Create markdown guides in `guides/` to document best practices and workflows:
+
+1. **Create a new file** — `guides/my-guide.md`
+2. **Add YAML frontmatter** (optional):
+   ```yaml
+   ---
+   title: My Guide Title
+   description: One-line description
+   tags: [tag1, tag2]
+   ---
+   ```
+3. **Write markdown content** — Guidelines, workflows, examples
+4. **Restart the server** — Guides auto-load at startup
+5. **Search with `get_usage_guide`** — Guides are immediately discoverable
+
+No code changes needed! Users can then search by:
+- Guide name: `get_usage_guide("my-guide")`
+- Keyword: `get_usage_guide("cluster")`
+- List all: `get_usage_guide("list")`
 
 ## Limitations
 
