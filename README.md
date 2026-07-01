@@ -17,7 +17,8 @@ Supports custom authentication (Bearer JWT, Basic), Socks5 proxy routing, multip
 - **Semantic Search** — Search Vector Store collections with natural language queries
 - **RAG Pattern** — Retrieve documents + generate AI responses in one call
 - **Progressive Help** — Searchable endpoint documentation with examples and parameters
-- **20+ Endpoints** — Elastic Compute, Vector Store, OMS, QueryGrid fully documented
+- **50+ Endpoints** — Auto-generated from Swagger specs (Elastic Compute, Vector Store, OMS, QueryGrid, etc.)
+- **Swagger Auto-Parser** — Endpoints loaded at startup; no hand-curation needed
 - **Stateless Design** — All compute logic lives in the cloud APIs; MCP just brokers requests
 
 ## Quick Start
@@ -129,19 +130,22 @@ Claude executes: execute_rest_call {
 
 ```
 src/
-├── index.ts           # MCP server + tool handlers
-├── rest-client.ts     # HTTP client (axios + auth + proxy)
-├── syntax-help.ts     # Endpoint registry and search
-├── types.ts           # TypeScript interfaces
-└── config.ts          # Environment config
+├── index.ts             # MCP server + tool handlers
+├── rest-client.ts       # HTTP client (axios + auth + proxy)
+├── syntax-help.ts       # Endpoint registry and search
+├── swagger-parser.ts    # Swagger spec parser (auto-generates endpoints)
+├── file-utils.ts        # File discovery and glob expansion
+├── types.ts             # TypeScript interfaces
+└── config.ts            # Environment config
 
 specs/
-└── elastic-compute-api.json   # Swagger spec snapshot
+├── global-compute-api.json    # Global Compute API (37 endpoints)
+└── vector-store-api.json      # Vector Store API (13 endpoints)
 
 tests/
-└── ...                # Unit tests
+└── ...                  # Unit tests
 
-CLAUDE.md             # Detailed developer guide
+CLAUDE.md              # Detailed developer guide
 ```
 
 ## Development
@@ -185,13 +189,39 @@ Claude executes: set_proxy {
 
 All subsequent requests route through the proxy until `set_proxy { type: "none" }` is called.
 
+## Adding New API Specs
+
+The server auto-loads endpoints from Swagger/OpenAPI specs. To add a new API:
+
+1. **Place the Swagger spec** in `specs/my-api.json`
+2. **Restart the server** — endpoints load automatically at startup
+3. **Search with `get_syntax_help`** — all endpoints are immediately searchable
+
+No code changes needed! Example:
+
+```bash
+# Copy your Swagger spec
+cp /path/to/new-api-swagger.json specs/new-api.json
+
+# Restart the server
+npm start
+
+# Now Claude can search and use all endpoints from new-api.json
+```
+
+The parser extracts:
+- Endpoint path and HTTP method
+- Parameter names, types, and requirements
+- Operation summary and description
+- Response descriptions and examples
+- Tags for better discoverability
+
 ## Limitations
 
 - **No auto token refresh** — If a JWT expires, call `set_auth` again with a fresh token
 - **No request templating (yet)** — Request bodies are literal; Handlebars templating planned
 - **No response filtering (yet)** — Full responses returned; jq-like queries planned
 - **Blocking uploads** — Large files block the connection; chunking coming in Phase 2
-- **Swagger auto-parsing pending** — Endpoints hand-curated; auto-generation from swagger specs in Phase 2
 
 ## Documentation
 
@@ -205,10 +235,9 @@ All subsequent requests route through the proxy until `set_proxy { type: "none" 
 
 | Service | Status | Endpoints | Auth |
 |---------|--------|-----------|------|
-| **Elastic Compute** | ✅ Complete | 12+ (clusters, configs, OMS, QueryGrid) | Bearer, Basic |
-| **Vector Store** | ✅ Complete | 13+ (collections, search, ingest, permissions) | Bearer, Basic |
-| **OMS** | ✅ Documented | Databases, objects, permissions | Bearer |
-| **QueryGrid** | ✅ Documented | Connectors, fabrics, health | Bearer |
+| **Global Compute** | ✅ Complete | 37 (clusters, configs, OMS, QueryGrid, site-settings) | Bearer, Basic |
+| **Vector Store** | ✅ Complete | 13 (collections, search, ingest, permissions, health) | Bearer, Basic |
+| **Any REST API** | ✅ Supported | Unlimited (universal client) | Bearer, Basic, Custom |
 
 ## Contributing
 
