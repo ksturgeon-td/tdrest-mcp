@@ -7,6 +7,8 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { RestClient } from "./rest-client.js";
 import { SyntaxHelpRegistry } from "./syntax-help.js";
 import { AuthConfig, ProxyConfig, RestRequestPayload } from "./types.js";
+import { loadConfig } from "./config.js";
+import { generateSyntaxHelpFromSwagger } from "./swagger-parser.js";
 import {
   expandGlob,
   listDirectory,
@@ -14,6 +16,8 @@ import {
   formatFileSize,
   filterByExtension,
 } from "./file-utils.js";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const server = new Server(
   {
@@ -29,446 +33,38 @@ const server = new Server(
 
 const restClient = new RestClient();
 const syntaxHelp = new SyntaxHelpRegistry();
+const appConfig = loadConfig();
 
 let sessionAuth: AuthConfig | null = null;
-let sessionProxy: ProxyConfig | null = null;
+let sessionProxy: ProxyConfig | null = appConfig.defaultProxy;
 
 // Initialize syntax help entries from swagger specs
 function initializeSyntaxHelp(): void {
-  syntaxHelp.register({
-    endpoint: "/clusters",
-    method: "GET",
-    description: "List all compute engine clusters for a site",
-    parameters: [
-      {
-        name: "site_id",
-        type: "string",
-        required: true,
-        description: "Teradata site identifier (e.g., TDICAM33431DV45)",
-      },
-      {
-        name: "page",
-        type: "integer",
-        required: false,
-        description: "Page number for pagination (default: 1)",
-      },
-      {
-        name: "page_size",
-        type: "integer",
-        required: false,
-        description: "Number of results per page (default: 50, max: 1000)",
-      },
-    ],
-    requestTemplate: undefined,
-    responseExample: JSON.stringify(
-      {
-        items: [
-          {
-            component_id: "comp_SheDvQaMDNs6MqiSX4gJD",
-            name: "test-cluster21",
-            status: "RUNNING",
-            desired_status: "RUNNING",
-            manifest_version: "0.0.1",
-          },
-        ],
-        total: 1,
-        limit: 50,
-        offset: 0,
-      },
-      null,
-      2
-    ),
-    notes: [
-      "Requires Bearer token authentication with valid JWT",
-      "Site ID is required as a query parameter",
-      "Supports pagination for large result sets",
-    ],
-  });
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
 
-  syntaxHelp.register({
-    endpoint: "/clusters",
-    method: "POST",
-    description: "Create a new compute engine cluster",
-    parameters: [
-      {
-        name: "config_id",
-        type: "string",
-        required: true,
-        description: "Configuration ID for the cluster",
-      },
-    ],
-    requestTemplate: JSON.stringify({ config_id: "CEAMGPSCTEAM0006U" }),
-    responseExample: JSON.stringify(
-      {
-        component_id: "comp_SheDvQaMDNs6MqiSX4gJD",
-        name: "test-cluster",
-        status: "PROVISIONING",
-        desired_status: "RUNNING",
-      },
-      null,
-      2
-    ),
-    notes: [
-      "Returns 202 Accepted; cluster creation is asynchronous",
-      "Check status with GET /clusters/{id} to monitor progress",
-    ],
-  });
+  // Parse Global Compute API spec
+  const globalComputeSpecPath = path.join(
+    __dirname,
+    "../specs/global-compute-api.json"
+  );
+  const gcEntries = generateSyntaxHelpFromSwagger(globalComputeSpecPath);
+  gcEntries.forEach((entry) => syntaxHelp.register(entry));
 
-  syntaxHelp.register({
-    endpoint: "/clusters/{id}",
-    method: "GET",
-    description: "Retrieve details of a specific cluster",
-    parameters: [
-      {
-        name: "id",
-        type: "string",
-        required: true,
-        description: "Cluster configuration ID",
-      },
-    ],
-    notes: [
-      "Returns full cluster details including status and connectivity info",
-    ],
-  });
+  // Parse Vector Store API spec
+  const vectorStoreSpecPath = path.join(
+    __dirname,
+    "../specs/vector-store-api.json"
+  );
+  const vsEntries = generateSyntaxHelpFromSwagger(vectorStoreSpecPath);
+  vsEntries.forEach((entry) => syntaxHelp.register(entry));
 
-  syntaxHelp.register({
-    endpoint: "/clusters/{id}",
-    method: "DELETE",
-    description: "Delete a compute engine cluster",
-    parameters: [
-      {
-        name: "id",
-        type: "string",
-        required: true,
-        description: "Cluster configuration ID",
-      },
-    ],
-    notes: [
-      "Returns 202 Accepted; deletion is asynchronous",
-      "This operation cannot be undone",
-    ],
-  });
-
-  syntaxHelp.register({
-    endpoint: "/configs",
-    method: "GET",
-    description: "List all compute engine configurations",
-    parameters: [
-      {
-        name: "site_id",
-        type: "string",
-        required: false,
-        description: "Filter by site ID",
-      },
-    ],
-    notes: ["Configurations define the template for cluster creation"],
-  });
-
-  syntaxHelp.register({
-    endpoint: "/configs",
-    method: "POST",
-    description: "Create a new compute engine configuration",
-    parameters: [
-      {
-        name: "name",
-        type: "string",
-        required: true,
-        description: "Configuration name",
-      },
-      {
-        name: "site_id",
-        type: "string",
-        required: true,
-        description: "Associated site ID",
-      },
-      {
-        name: "compute",
-        type: "object",
-        required: true,
-        description:
-          'Compute specification (type: DEDICATED or POOLED, size: 1x-16x)',
-      },
-    ],
-    notes: [
-      "DEDICATED: fixed resource allocation per cluster",
-      "POOLED: shared resource pool with auto-scaling",
-    ],
-  });
-
-  // Vector Store API endpoints
-  syntaxHelp.register({
-    endpoint: "/data-insights/api/v2/collections",
-    method: "GET",
-    description: "List all available vector collections",
-    parameters: [
-      {
-        name: "authorized",
-        type: "boolean",
-        required: false,
-        description: "Filter to only show authorized collections",
-      },
-      {
-        name: "page",
-        type: "integer",
-        required: false,
-        description: "Page number for pagination (default: 1)",
-      },
-      {
-        name: "page_size",
-        type: "integer",
-        required: false,
-        description: "Number of results per page",
-      },
-    ],
-    responseExample: JSON.stringify(
-      {
-        collection_count: 2,
-        page: 1,
-        page_size: 20,
-        collection_list: [
-          {
-            collection_name: "documents",
-            collection_status: "READY",
-            collection_type: "FILE-CONTENT-BASED",
-            target_database: "vector_db",
-            permission: "USER",
-          },
-        ],
-      },
-      null,
-      2
-    ),
-    notes: [
-      "Collections are virtual search indexes over your data",
-      "Supports CONTENT-BASED and EMBEDDING-BASED collection types",
-    ],
-  });
-
-  syntaxHelp.register({
-    endpoint: "/data-insights/api/v2/collections/{collection_name}",
-    method: "POST",
-    description: "Create a new vector collection",
-    parameters: [
-      {
-        name: "collection_name",
-        type: "string",
-        required: true,
-        description: "Unique name for the collection",
-      },
-      {
-        name: "collection_type",
-        type: "string",
-        required: true,
-        description:
-          "Type: CONTENT-BASED, EMBEDDING-BASED, FILE-CONTENT-BASED, FILE-EMBEDDING-BASED",
-      },
-      {
-        name: "target_database",
-        type: "string",
-        required: false,
-        description: "Target database (defaults to logged-in database)",
-      },
-    ],
-    notes: [
-      "CONTENT-BASED: Generates embeddings from content columns automatically",
-      "EMBEDDING-BASED: Uses pre-computed embedding columns",
-      "FILE variants work with uploaded documents",
-    ],
-  });
-
-  syntaxHelp.register({
-    endpoint: "/data-insights/api/v2/collections/{collection_name}/ingest",
-    method: "PUT",
-    description: "Upload and ingest documents into a collection",
-    parameters: [
-      {
-        name: "collection_name",
-        type: "string",
-        required: true,
-        description: "Target collection name",
-      },
-      {
-        name: "files",
-        type: "file",
-        required: true,
-        description: "Files to upload (CSV, JSON, PDF, etc.)",
-      },
-    ],
-    responseExample: JSON.stringify(
-      {
-        collection_name: "documents",
-        collection_status: "ingesting",
-        message: "Files uploaded successfully and ingestion in progress.",
-      },
-      null,
-      2
-    ),
-    notes: [
-      "Supports multipart file upload",
-      "Returns 202 Accepted; check status endpoint for progress",
-      "Can specify chunk_size, overlap, and extraction schema in request",
-    ],
-  });
-
-  syntaxHelp.register({
-    endpoint: "/data-insights/api/v2/collections/{collection_name}/similarity-search",
-    method: "POST",
-    description: "Search for similar documents in a collection",
-    parameters: [
-      {
-        name: "collection_name",
-        type: "string",
-        required: true,
-        description: "Target collection name",
-      },
-      {
-        name: "question",
-        type: "string",
-        required: true,
-        description: "Query text (will be embedded for similarity matching)",
-      },
-      {
-        name: "top_k",
-        type: "integer",
-        required: false,
-        description: "Number of top results to return (default: 10)",
-      },
-    ],
-    responseExample: JSON.stringify(
-      {
-        similar_objects_count: 3,
-        page: 1,
-        page_size: 20,
-        similar_objects_list: [
-          {
-            score: 0.92,
-            DataBaseName: "vector_db",
-            TableName: "documents",
-            TD_ID: 1,
-            data_col: "This is a relevant document...",
-          },
-        ],
-      },
-      null,
-      2
-    ),
-    notes: [
-      "Uses semantic similarity (not keyword matching)",
-      "Scores range from 0-1 (higher = more similar)",
-      "Can filter results by metadata columns",
-    ],
-  });
-
-  syntaxHelp.register({
-    endpoint: "/data-insights/api/v2/collections/{collection_name}/ask",
-    method: "POST",
-    description:
-      "Ask a question and get a natural language response based on collection data",
-    parameters: [
-      {
-        name: "collection_name",
-        type: "string",
-        required: true,
-        description: "Target collection name",
-      },
-      {
-        name: "question",
-        type: "string",
-        required: true,
-        description: "Question to ask about the collection",
-      },
-      {
-        name: "chat_model",
-        type: "object",
-        required: false,
-        description: "AI model to use for response (uses default if omitted)",
-      },
-    ],
-    responseExample: JSON.stringify(
-      {
-        message:
-          "Based on the documents, the analysis shows that efficiency improved by 23% after implementing the recommended changes.",
-      },
-      null,
-      2
-    ),
-    notes: [
-      "Combines semantic search + LLM generation",
-      "Supports custom guardrails and safety settings",
-      "Can specify embedding model, ranking model, and search strategy",
-    ],
-  });
-
-  syntaxHelp.register({
-    endpoint: "/data-insights/api/v2/permissions/{collection_name}",
-    method: "GET",
-    description: "Get user permissions for a collection",
-    parameters: [
-      {
-        name: "collection_name",
-        type: "string",
-        required: true,
-        description: "Target collection name",
-      },
-    ],
-    responseExample: JSON.stringify(
-      {
-        users_count: 3,
-        page: 1,
-        page_size: 20,
-        users_list: [
-          { user_name: "alice", permission: "USER" },
-          { user_name: "bob", permission: "ADMIN" },
-        ],
-      },
-      null,
-      2
-    ),
-    notes: ["Permission levels: USER (read), ADMIN (read/write), NO_ACCESS"],
-  });
-
-  syntaxHelp.register({
-    endpoint: "/data-insights/api/v2/permissions/{collection_name}",
-    method: "PUT",
-    description: "Grant or revoke user permissions on a collection",
-    parameters: [
-      {
-        name: "collection_name",
-        type: "string",
-        required: true,
-        description: "Target collection name",
-      },
-      {
-        name: "user_names",
-        type: "array",
-        required: true,
-        description: "List of user names to modify permissions for",
-      },
-      {
-        name: "action",
-        type: "string",
-        required: true,
-        description: "GRANT or REVOKE",
-      },
-      {
-        name: "permission",
-        type: "string",
-        required: true,
-        description: "USER or ADMIN",
-      },
-    ],
-    responseExample: JSON.stringify(
-      {
-        message: "USER permission for collection documents has been granted.",
-      },
-      null,
-      2
-    ),
-    notes: [
-      "ADMIN can create, update, and delete the collection",
-      "USER can search and view but cannot modify",
-    ],
-  });
+  console.log(
+    `Loaded ${gcEntries.length} endpoints from Global Compute API spec`
+  );
+  console.log(
+    `Loaded ${vsEntries.length} endpoints from Vector Store API spec`
+  );
 }
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -534,26 +130,18 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             headers: {
               type: "object",
-              description: "Custom HTTP headers",
+              description: "Custom HTTP headers (e.g., {\"X-API-Key\": \"value\"})",
               additionalProperties: { type: "string" },
             },
             body: {
-              oneOf: [
-                { type: "string" },
-                { type: "object" },
-              ],
               description: "Request body (JSON object or string)",
             },
             files: {
               type: "object",
               description:
-                "Files to upload (multipart). Key is field name, value has path property",
+                "Files to upload (multipart). Key is field name, value is {\"path\": \"/path/to/file\"}",
               additionalProperties: {
                 type: "object",
-                properties: {
-                  path: { type: "string" },
-                },
-                required: ["path"],
               },
             },
             filePattern: {
@@ -563,62 +151,19 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             formData: {
               type: "object",
-              description: "Form fields (application/x-www-form-urlencoded)",
-              additionalProperties: {
-                oneOf: [
-                  { type: "string" },
-                  { type: "number" },
-                  { type: "boolean" },
-                ],
-              },
+              description: "Form fields as key-value pairs (string, number, or boolean values)",
+              additionalProperties: true,
             },
             auth: {
               type: "object",
               description:
-                "Authentication config. Omit to use session auth if set.",
-              properties: {
-                type: {
-                  type: "string",
-                  enum: ["bearer", "basic", "custom", "none"],
-                },
-                token: {
-                  type: "string",
-                },
-                username: {
-                  type: "string",
-                },
-                password: {
-                  type: "string",
-                },
-                headerName: {
-                  type: "string",
-                },
-                headerValue: {
-                  type: "string",
-                },
-              },
+                "Authentication config. Omit to use session auth if set. Example: {\"type\": \"bearer\", \"token\": \"...\"} or {\"type\": \"basic\", \"username\": \"...\", \"password\": \"...\"}",
+              additionalProperties: true,
             },
             proxy: {
               type: "object",
-              description: "Proxy config. Omit to use session proxy if set.",
-              properties: {
-                type: {
-                  type: "string",
-                  enum: ["socks5", "http", "https", "none"],
-                },
-                host: {
-                  type: "string",
-                },
-                port: {
-                  type: "number",
-                },
-                username: {
-                  type: "string",
-                },
-                password: {
-                  type: "string",
-                },
-              },
+              description: "Proxy config. Example: {\"type\": \"socks5\", \"host\": \"localhost\", \"port\": 1080}",
+              additionalProperties: true,
             },
             timeout: {
               type: "number",

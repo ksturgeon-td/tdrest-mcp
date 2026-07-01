@@ -6,7 +6,15 @@
       "Bash(git commit -m 'Add comprehensive file discovery documentation *)",
       "Bash(git push *)",
       "Bash(timeout 3 node /Users/kevin.sturgeon/claude_code/tdrest-mcp/dist/index.js)",
-      "Bash(git commit -m 'Fix MCP server initialization - declare tools capability *)"
+      "Bash(git commit -m 'Fix MCP server initialization - declare tools capability *)",
+      "Read(//Users/kevin.sturgeon/Library/Application Support/Claude/**)",
+      "Bash(jq . gc-api-spec.json)",
+      "Bash(cp gc-api-spec.json /Users/kevin.sturgeon/claude_code/tdrest-mcp/specs/global-compute-api.json)",
+      "Bash(cat)",
+      "Bash(node /tmp/test-parser.mjs)",
+      "Bash(node /tmp/test-vs-parser.mjs)",
+      "Bash(timeout 5 node dist/index.js)",
+      "Bash(git commit -m ' *)"
     ],
     "additionalDirectories": [
       "/tmp"
