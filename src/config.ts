@@ -1,7 +1,7 @@
 import { config } from "dotenv";
 import { fileURLToPath } from "url";
 import path from "path";
-import { type ProxyConfig } from "./types.js";
+import { type AuthConfig, type ProxyConfig } from "./types.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,6 +13,7 @@ export interface ServiceConfig {
   elasticComputeBaseUrl: string;
   vectorStoreBaseUrl: string;
   requestTimeout: number;
+  defaultAuth: AuthConfig | null;
   defaultProxy: ProxyConfig | null;
   customServices: Record<string, string>;
 }
@@ -41,6 +42,53 @@ function loadCustomServices(): Record<string, string> {
   }
 
   return customServices;
+}
+
+function loadDefaultAuth(): AuthConfig | null {
+  const authType = process.env.DEFAULT_AUTH_TYPE;
+
+  if (!authType || authType === "none") {
+    return null;
+  }
+
+  if (authType === "bearer") {
+    const token = process.env.DEFAULT_AUTH_TOKEN;
+    if (!token) {
+      return null;
+    }
+    return {
+      type: "bearer",
+      token,
+    };
+  }
+
+  if (authType === "basic") {
+    const username = process.env.DEFAULT_AUTH_USERNAME;
+    const password = process.env.DEFAULT_AUTH_PASSWORD;
+    if (!username || !password) {
+      return null;
+    }
+    return {
+      type: "basic",
+      username,
+      password,
+    };
+  }
+
+  if (authType === "custom") {
+    const headerName = process.env.DEFAULT_AUTH_HEADER_NAME;
+    const headerValue = process.env.DEFAULT_AUTH_HEADER_VALUE;
+    if (!headerName || !headerValue) {
+      return null;
+    }
+    return {
+      type: "custom",
+      headerName,
+      headerValue,
+    };
+  }
+
+  return null;
 }
 
 function loadDefaultProxy(): ProxyConfig | null {
@@ -73,6 +121,7 @@ export function loadConfig(): ServiceConfig {
       "https://api.vectorstore.qateradatacloud.com"
     ),
     requestTimeout: parseInt(getEnvVar("REQUEST_TIMEOUT", "30000"), 10),
+    defaultAuth: loadDefaultAuth(),
     defaultProxy: loadDefaultProxy(),
     customServices: loadCustomServices(),
   };

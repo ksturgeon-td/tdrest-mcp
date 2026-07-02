@@ -43,7 +43,7 @@ const __dirname = path.dirname(__filename);
 const guidesDir = path.join(__dirname, "../guides");
 const usageGuides = loadGuidesFromDirectory(guidesDir);
 
-let sessionAuth: AuthConfig | null = null;
+let sessionAuth: AuthConfig | null = appConfig.defaultAuth;
 let sessionProxy: ProxyConfig | null = appConfig.defaultProxy;
 
 // Initialize syntax help entries from swagger specs
@@ -315,10 +315,23 @@ Vector Store API:
 
       text += `\n\nRequest Timeout: ${config.requestTimeout}ms
 
+Default Authentication:
+  ${
+    config.defaultAuth
+      ? `${config.defaultAuth.type}${
+          config.defaultAuth.type === "bearer"
+            ? " (JWT token)"
+            : config.defaultAuth.type === "basic"
+              ? " (username/password)"
+              : ""
+        } (from environment)`
+      : "None (use set_auth tool to set)"
+  }
+
 Default Proxy:
   ${config.defaultProxy ? `${config.defaultProxy.type} - ${config.defaultProxy.host}:${config.defaultProxy.port}` : "None (can be set with set_proxy)"}
 
-Use these base URLs when making REST API calls via execute_rest_call.`;
+Use these base URLs and auth when making REST API calls via execute_rest_call.`;
 
       return {
         content: [{ type: "text", text }],

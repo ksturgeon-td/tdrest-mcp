@@ -78,7 +78,20 @@ Restart Claude Desktop, and the tools will appear in the tool menu.
 
 ## Usage
 
-### Set Authentication
+### Authentication
+
+**Option 1: Environment Variable (Recommended for long-lived tokens)**
+
+Set auth once in `.env` — no context overhead for subsequent calls:
+
+```bash
+DEFAULT_AUTH_TYPE=bearer
+DEFAULT_AUTH_TOKEN=eyJhbGc...
+```
+
+All requests automatically use it. Agent calls can still override per-request.
+
+**Option 2: Session Auth (for interactive use)**
 
 ```
 User: "Authenticate with my Teradata JWT token"
@@ -87,6 +100,8 @@ Claude executes: set_auth {
   token: "eyJhbGc..."
 }
 ```
+
+Auth is stored for the session and applied to all subsequent requests.
 
 ### Make a REST Call
 
