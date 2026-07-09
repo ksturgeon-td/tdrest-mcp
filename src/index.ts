@@ -191,7 +191,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "set_auth",
         description:
-          "Set session-level authentication for subsequent requests",
+          "Set session-level authentication for subsequent requests. Optional if DEFAULT_AUTH_TYPE is configured in environment variables (check get_service_config to see if default auth is already active).",
         inputSchema: {
           type: "object",
           properties: {
