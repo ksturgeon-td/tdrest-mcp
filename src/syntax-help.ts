@@ -56,6 +56,8 @@ export class SyntaxHelpRegistry {
     }
 
     let text = `Found ${results.length} endpoint(s) matching "${query}":\n\n`;
+    text += `**URL Construction:** Append the endpoint path directly to the base URL (no /api/v1 prefix).\n`;
+    text += `Example: https://preprod.globalcompute.qateradatacloud.com + /clusters = https://preprod.globalcompute.qateradatacloud.com/clusters\n\n`;
 
     for (const entry of results) {
       text += `### ${entry.method} ${entry.endpoint}\n`;
@@ -98,6 +100,8 @@ export class SyntaxHelpRegistry {
     }
 
     let text = `Available endpoints (${endpoints.length} total):\n\n`;
+    text += `**IMPORTANT:** Append endpoint paths directly to the base URL (no /api/v1 prefix).\n`;
+    text += `Example: https://preprod.globalcompute.qateradatacloud.com + /clusters = https://preprod.globalcompute.qateradatacloud.com/clusters\n\n`;
 
     for (const entry of endpoints) {
       text += `- **${entry.method} ${entry.endpoint}** — ${entry.description}\n`;
